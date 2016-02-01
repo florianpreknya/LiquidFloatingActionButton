@@ -54,6 +54,19 @@ public class LiquidFloatingActionButton : UIView {
     }
     public private(set) var isClosed: Bool = true
     
+    // duration settings
+    public var openDuration: CGFloat  = 0.6 {
+        didSet {
+            baseView.openDuration = openDuration
+        }
+    }
+    public var closeDuration: CGFloat = 0.2 {
+        didSet {
+            baseView.closeDuration = closeDuration
+        }
+    }
+    public var viscosity: CGFloat     = 0.65
+    
     @IBInspectable public var color: UIColor = UIColor(red: 82 / 255.0, green: 112 / 255.0, blue: 235 / 255.0, alpha: 1.0) {
         didSet {
             baseView.color = color
@@ -111,7 +124,7 @@ public class LiquidFloatingActionButton : UIView {
     public func open() {
         
         // rotate plus icon
-        CATransaction.setAnimationDuration(0.8)
+        CATransaction.setAnimationDuration(CFTimeInterval(self.openDuration + 0.2))
         self.plusLayer.transform = CATransform3DMakeRotation((CGFloat(M_PI) * rotationDegrees) / 180, 0, 0, 1)
 
         let cells = cellArray()
@@ -128,7 +141,7 @@ public class LiquidFloatingActionButton : UIView {
     public func close() {
         
         // rotate plus icon
-        CATransaction.setAnimationDuration(0.8)
+        CATransaction.setAnimationDuration(CFTimeInterval(self.closeDuration + 0.2))
         self.plusLayer.transform = CATransform3DMakeRotation(0, 0, 0, 1)
     
         self.baseView.close(cellArray())
@@ -268,9 +281,8 @@ class ActionBarBaseView : UIView {
 
 class CircleLiquidBaseView : ActionBarBaseView {
 
-    let openDuration: CGFloat  = 0.6
-    let closeDuration: CGFloat = 0.2
-    let viscosity: CGFloat     = 0.65
+    var openDuration: CGFloat  = 0.6
+    var closeDuration: CGFloat = 0.2
     var animateStyle: LiquidFloatingActionButtonAnimateStyle = .Up
     var color: UIColor = UIColor(red: 82 / 255.0, green: 112 / 255.0, blue: 235 / 255.0, alpha: 1.0) {
         didSet {
@@ -291,12 +303,14 @@ class CircleLiquidBaseView : ActionBarBaseView {
     override func setup(actionButton: LiquidFloatingActionButton) {
         self.frame = actionButton.frame
         self.center = actionButton.center.minus(actionButton.frame.origin)
+        self.openDuration = actionButton.openDuration
+        self.closeDuration = actionButton.closeDuration
         self.animateStyle = actionButton.animateStyle
         let radius = min(self.frame.width, self.frame.height) * 0.5
         self.engine = SimpleCircleLiquidEngine(radiusThresh: radius * 0.73, angleThresh: 0.45)
-        engine?.viscosity = viscosity
+        engine?.viscosity = actionButton.viscosity
         self.bigEngine = SimpleCircleLiquidEngine(radiusThresh: radius, angleThresh: 0.55)
-        bigEngine?.viscosity = viscosity
+        bigEngine?.viscosity = actionButton.viscosity
         self.engine?.color = actionButton.color
         self.bigEngine?.color = actionButton.color
 
@@ -383,7 +397,7 @@ class CircleLiquidBaseView : ActionBarBaseView {
     }
     
     func updateOpen() {
-        update(0.1, duration: openDuration) { cell, i, ratio in
+        update(openDuration / 6, duration: openDuration) { cell, i, ratio in
             let posRatio = ratio > CGFloat(i) / CGFloat(self.openingCells.count) ? ratio : 0
             let distance = (cell.frame.height * 0.5 + CGFloat(i + 1) * cell.frame.height * 1.5) * posRatio
             cell.center = self.center.plus(self.differencePoint(distance))
